@@ -5,40 +5,27 @@ import requests
 from bs4 import BeautifulSoup
 
 def fetch_url(url):
-    # Extract host and path to use in the HTTP GET request
-    host = url.split("//")[-1].split("/")[0]
-    path = url.split(host)[-1]
-    if path == "":
-        path = "/"
-
     try:
-        while True:
-            # Create a socket and connect to the server
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((host, 80))
-                s.sendall(f"GET {path} HTTP/1.1\r\nHost: {host}\r\n\r\n".encode())
+        # Make an HTTP GET request to the specified URL
+        response = requests.get(url)
 
-                # Receive the response and decode it
-                response = s.recv(4096).decode()
+        # Check if the request was successful (status code 200)
+        if response.status_code == 200:
+            # Parse the HTML content of the response
+            soup = BeautifulSoup(response.content, 'html.parser')
 
-                # Check for redirection (status codes 301 or 302)
-                if 'HTTP/1.1 301' in response or 'HTTP/1.1 302' in response:
-                    # Extract the new location from the response headers
-                    new_location = re.search(r'Location: (.+?)\r\n', response).group(1)
-                    # Update the host and path for the new location
-                    host = new_location.split("//")[-1].split("/")[0]
-                    path = new_location.split(host)[-1]
-                    if path == "":
-                        path = "/"
-                else:
-                    # No redirection, return the response
-                    # Simple HTML tag stripping for readability
-                    clean_response = re.sub('<[^<]+?>', '', response)
-                    print(clean_response)
-                    return clean_response
-    except Exception as e:
-        print(f"Error fetching URL: {e}")
-        return None
+            # Extract text from HTML, excluding tags
+            text = soup.get_text()
+
+            # Print the human-readable response
+            print(text)
+        elif response.status_code == 301 or response.status_code == 302:
+            # If the status code indicates a redirect, print the redirect location
+            print(f"Redirected to: {response.headers['Location']}")
+        else:
+            print(f"Failed to fetch URL: {url}. Status code: {response.status_code}")
+    except requests.RequestException as e:
+        print(f"Error fetching URL: {url}. Exception: {e}")
 
 def google_search(query):
     # Create a TCP/IP socket
