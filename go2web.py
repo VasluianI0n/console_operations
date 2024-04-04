@@ -80,7 +80,7 @@ def main():
     args = parser.parse_args()
 
     if args.search:
-        google_search("cats")
+        google_search(args.search)
     elif args.url:
         fetch_url(args.url)
     else:
